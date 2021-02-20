@@ -10,3 +10,7 @@ class DatabaseInsertionException(Exception):
     def __init__(self, exception_message, status_code):
         self.exception_message = exception_message
         self.status_code = status_code
+
+class RegistrationIDsNULLException(Exception):
+    def __init__(self, status_code):
+        self.status_code = status_code

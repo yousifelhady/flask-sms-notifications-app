@@ -65,8 +65,9 @@ class Notification(db.Model):
         try:
             db.session.add(self)
             db.session.commit()
-        except:
+        except Exception as ex:
             db.session.roll_back()
+            raise DatabaseInsertionException(str(ex), 500)
         
     def format(self):
         return {

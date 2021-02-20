@@ -4,9 +4,10 @@ import pathlib
 from werkzeug.exceptions import HTTPException
 from datetime import datetime
 import re
+from pyfcm import FCMNotification
 
 from models import Client, Message, Notification, setup_db
-from exceptions import InvalidContactException, DatabaseInsertionException
+from exceptions import InvalidContactException, DatabaseInsertionException, RegistrationIDsNULLException
 
 #import firebase_admin
 #from firebase_admin import credentials
@@ -73,6 +74,41 @@ def store_message_in_db(subject, message, client_id):
     new_message = Message(subject=subject, body=message, time=current_time, client_id=client_id)
     new_message.insert()
 
+@app.route('/send-notification', methods=['POST'])
+def send_notification():
+    api_key = 'AAAA6EwhWKo:APA91bHJiaWrXskFxQGQoybatbMLJxiDBC7nDT5hu7w8YYT1q_tZ2lnWqLjZeMpgPHjGYexZWiRhoq3ibxAUtkdyRLuIeripcVVi4-PzrvW2GcKJkWpbRCzSzd4NenMR8dGGSP931AUk'
+    push_service = FCMNotification(api_key=api_key)
+    
+    body = request.get_json()
+    #registration_id = FirebaseInstallations.getInstance().getToken()
+    #registration_id = FirebaseMessaging.getToken()
+    registration_ids = body.get('reg_ids')
+    notification_title = body.get('title')
+    notification_body = body.get('body')
+    
+    result = send_notification_to_devices(push_service, registration_ids, notification_title, notification_body)
+    print(result)
+    success = bool(result['success'])
+    #if success:
+    #    store_notification_in_db(notification_title, notification_body, client_id)
+    return jsonify({
+        'success': success
+    }), 200
+
+def send_notification_to_devices(push_service, registration_ids, notification_title, notification_body):
+    if isinstance(registration_ids, list):
+        # if passed registration ids list is empty, raise exception with status code: 400 Bad Request
+        if registration_ids == []:
+            raise RegistrationIDsNULLException(status_code=400)
+        return push_service.notify_multiple_devices(registration_ids=registration_ids, message_title=notification_title, message_body=notification_body)
+    else:
+        return push_service.notify_single_device(registration_id=registration_ids, message_title=notification_title, message_body=notification_body)
+
+def store_notification_in_db(title, body, client_id):
+    current_time = datetime.now()
+    new_notification = Notification(header=title, body=body, time=current_time, client_id=client_id)
+    new_notification.insert()
+
 @app.errorhandler(HTTPException)
 def handle_HTTPException(error):
     return jsonify({
@@ -95,6 +131,14 @@ def handle_DatabaseInsertionException(error):
         'success': False,
         'error': error.status_code,
         'message': "Error occured while inserting in database: " + error.exception_message
+    }), error.status_code
+
+@app.errorhandler(RegistrationIDsNULLException)
+def hande_RegistrationIDsNULLException(error):
+    return jsonify({
+        'success': False,
+        'error': error.status_code,
+        'message': "Registration IDs cannot be nulled list"
     }), error.status_code
 
 if __name__ == "__main__":
