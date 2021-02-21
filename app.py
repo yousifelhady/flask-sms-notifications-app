@@ -1,4 +1,6 @@
 from flask import Flask, request, jsonify, abort
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import os
 import pathlib
 from werkzeug.exceptions import HTTPException
@@ -17,6 +19,7 @@ from exceptions import InvalidContactException, DatabaseInsertionException, Regi
 
 app = Flask(__name__)
 setup_db(app)
+limiter = Limiter(app, key_func=get_remote_address)
 contact_fixed_length = 13
 api_key = 'AAAA6EwhWKo:APA91bHJiaWrXskFxQGQoybatbMLJxiDBC7nDT5hu7w8YYT1q_tZ2lnWqLjZeMpgPHjGYexZWiRhoq3ibxAUtkdyRLuIeripcVVi4-PzrvW2GcKJkWpbRCzSzd4NenMR8dGGSP931AUk'
 
@@ -26,6 +29,7 @@ def index():
     return clients[0].format()
 
 @app.route('/send-sms', methods=['POST'])
+@limiter.limit('2 per minute')
 def send_sms():
     body = request.get_json()
     client_id = body.get('id')
