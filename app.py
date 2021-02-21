@@ -18,6 +18,7 @@ from exceptions import InvalidContactException, DatabaseInsertionException, Regi
 app = Flask(__name__)
 setup_db(app)
 contact_fixed_length = 13
+api_key = 'AAAA6EwhWKo:APA91bHJiaWrXskFxQGQoybatbMLJxiDBC7nDT5hu7w8YYT1q_tZ2lnWqLjZeMpgPHjGYexZWiRhoq3ibxAUtkdyRLuIeripcVVi4-PzrvW2GcKJkWpbRCzSzd4NenMR8dGGSP931AUk'
 
 @app.route('/')
 def index():
@@ -76,13 +77,11 @@ def store_message_in_db(subject, message, client_id):
 
 @app.route('/send-notification', methods=['POST'])
 def send_notification():
-    api_key = 'AAAA6EwhWKo:APA91bHJiaWrXskFxQGQoybatbMLJxiDBC7nDT5hu7w8YYT1q_tZ2lnWqLjZeMpgPHjGYexZWiRhoq3ibxAUtkdyRLuIeripcVVi4-PzrvW2GcKJkWpbRCzSzd4NenMR8dGGSP931AUk'
     push_service = FCMNotification(api_key=api_key)
-    
     body = request.get_json()
     #registration_id = FirebaseInstallations.getInstance().getToken()
     #registration_id = FirebaseMessaging.getToken()
-    registration_ids = body.get('reg_ids')
+    registration_ids = "rfOqaLmUi3Ox85zn3GgqYhtlcNc2"
     notification_title = body.get('title')
     notification_body = body.get('body')
     
@@ -100,14 +99,32 @@ def send_notification_to_devices(push_service, registration_ids, notification_ti
         # if passed registration ids list is empty, raise exception with status code: 400 Bad Request
         if registration_ids == []:
             raise RegistrationIDsNULLException(status_code=400)
-        return push_service.notify_multiple_devices(registration_ids=registration_ids, message_title=notification_title, message_body=notification_body)
+        return push_service.notify_multiple_devices(registration_ids=registration_ids, message_body=notification_body, message_title=notification_title)
     else:
-        return push_service.notify_single_device(registration_id=registration_ids, message_title=notification_title, message_body=notification_body)
+        return push_service.notify_single_device(registration_id=registration_ids, message_body=notification_body, message_title=notification_title)
 
 def store_notification_in_db(title, body, client_id):
     current_time = datetime.now()
     new_notification = Notification(header=title, body=body, time=current_time, client_id=client_id)
     new_notification.insert()
+
+@app.route('/notify-topic', methods=['POST'])
+def notify_topic():
+    push_service = FCMNotification(api_key=api_key)
+    body = request.get_json()
+    topic_name = body.get('topic')
+    message_body = body.get('body')
+    message_title = body.get('title')
+    result = push_service.notify_topic_subscribers(topic_name=topic_name, message_body=message_body, message_title=message_title)
+    print(result)
+    success = bool(result['success'])
+    if success:
+        status_code = 200
+    else:
+        status_code = 500
+    return jsonify({
+        'success': success
+    }), status_code
 
 @app.errorhandler(HTTPException)
 def handle_HTTPException(error):
