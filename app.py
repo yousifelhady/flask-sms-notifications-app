@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, abort
+from flask import Flask, request, jsonify, abort, render_template, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
@@ -11,25 +11,22 @@ from pyfcm import FCMNotification
 from models import Client, Message, Notification, setup_db
 from exceptions import InvalidContactException, DatabaseInsertionException, RegistrationIDsNULLException
 
-#import firebase_admin
-#from firebase_admin import credentials
-
-#cred = credentials.Certificate(".\swvl-notifications-firebase-adminsdk-wf0zt-58b0f9ae56.json")
-#default_app = firebase_admin.initialize_app(cred)
-
 app = Flask(__name__)
 setup_db(app)
 limiter = Limiter(app, key_func=get_remote_address)
 contact_fixed_length = 13
 api_key = 'AAAA6EwhWKo:APA91bHJiaWrXskFxQGQoybatbMLJxiDBC7nDT5hu7w8YYT1q_tZ2lnWqLjZeMpgPHjGYexZWiRhoq3ibxAUtkdyRLuIeripcVVi4-PzrvW2GcKJkWpbRCzSzd4NenMR8dGGSP931AUk'
 
+@app.route('/<path:path>')
+def send_js_path(path):
+    return send_from_directory('.', path)
+
 @app.route('/')
 def index():
-    clients = Client.query.all()
-    return clients[0].format()
+    return render_template('index.html')
 
 @app.route('/send-sms', methods=['POST'])
-@limiter.limit('2 per minute')
+@limiter.limit('2 per minute') # external config file can be used to configure the limit dynamically without being hardcoded
 def send_sms():
     body = request.get_json()
     client_id = body.get('id')
@@ -83,15 +80,16 @@ def store_message_in_db(subject, message, client_id):
 def send_notification():
     push_service = FCMNotification(api_key=api_key)
     body = request.get_json()
-    #registration_id = FirebaseInstallations.getInstance().getToken()
-    #registration_id = FirebaseMessaging.getToken()
-    registration_ids = "rfOqaLmUi3Ox85zn3GgqYhtlcNc2"
+    registration_ids = body.get('reg_ids')
     notification_title = body.get('title')
     notification_body = body.get('body')
     
     result = send_notification_to_devices(push_service, registration_ids, notification_title, notification_body)
     print(result)
-    success = bool(result['success'])
+    if isinstance(result, list):
+        success = bool(result[0].get('success'))
+    else:
+        success = bool(result['success'])
     #if success:
     #    store_notification_in_db(notification_title, notification_body, client_id)
     return jsonify({
