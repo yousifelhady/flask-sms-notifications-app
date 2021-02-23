@@ -32,7 +32,6 @@ class Client(db.Model):
     id = Column(Integer, primary_key=True)
     contact = Column(String)
     name = Column(String)
-    notifications = db.relationship('Notification', backref='client_notification', cascade='all,delete', lazy=True)
     messages = db.relationship('Message', backref='client_message', cascade='all,delete', lazy=True)
     
     def insert(self):
@@ -56,10 +55,10 @@ class Client(db.Model):
 class Notification(db.Model):
     __tablename__ = 'notifications'
     id = Column(Integer, primary_key=True)
-    header = Column(String)
+    title = Column(String)
     body = Column(String)
     time = Column(DateTime, default=datetime.now())
-    client_id = Column(Integer, db.ForeignKey('clients.id', ondelete='cascade'), nullable=False)
+    notificationtokens = db.relationship('TokenNotification', backref='notification_tokens', cascade='all,delete', lazy=True)
 
     def insert(self):
         try:
@@ -72,14 +71,63 @@ class Notification(db.Model):
     def format(self):
         return {
             'id': self.id,
-            'header': self.header,
+            'title': self.title,
             'body': self.body,
             'time': self.time,
-            'client_id': self.client_id
         }
 
     def __repr__(self):
-        return f'notf. id: {self.id}, header: {self.header}, body: {self.body}, time: {self.time}, client_id: {self.client_id}'
+        return f'notf. id: {self.id}, title: {self.title}, body: {self.body}, time: {self.time}'
+
+class Token(db.Model):
+    __tablename__ = 'tokens'
+    id = Column(Integer, primary_key=True)
+    token = Column(String, unique=True)
+    tokennotifications = db.relationship('TokenNotification', backref='token_notifications', cascade='all,delete', lazy=True)
+
+    def insert(self):
+        try:
+            db.session.add(self)
+            db.session.commit()
+        except Exception as ex:
+            db.session.roll_back()
+            raise DatabaseInsertionException(str(ex), 500)
+        
+    def format(self):
+        return {
+            'id': self.id,
+            'token': self.token
+        }
+
+    def __repr__(self):
+        return f'token: {self.token}'
+
+# This class is used to map the Many to Many relationship between
+# Tokens and Notifications as:
+# Token can receive multiple notifications &
+# Notification can be sent to multiple tokens
+# This is not essential to have and can be replaced with nosql database for simplicity, 
+# but I implemented it for data tracking purpose
+class TokenNotification(db.Model):
+    __tablename__ = 'tokennotifications'
+    id = Column(Integer, primary_key=True)
+    token_id = Column(Integer, db.ForeignKey('tokens.id', ondelete='cascade'), nullable=False)
+    notification_id = Column(Integer, db.ForeignKey('notifications.id', ondelete='cascade'), nullable=False)
+
+    def insert(self):
+        try:
+            db.session.add(self)
+            db.session.commit()
+        except Exception as ex:
+            db.session.roll_back()
+            raise DatabaseInsertionException(str(ex), 500)
+        
+    def format(self):
+        return {
+            'id': self.id,
+            'token_id': self.token_id,
+            'notification_id': self.notification_id
+        }
 
 class Message(db.Model):
     __tablename__ = 'messages'

@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, abort, render_template, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_cors import CORS
 import os
 import pathlib
 from werkzeug.exceptions import HTTPException
@@ -8,14 +9,24 @@ from datetime import datetime
 import re
 from pyfcm import FCMNotification
 
-from models import Client, Message, Notification, setup_db
+from models import Client, Message, Notification, Token, TokenNotification, setup_db
 from exceptions import InvalidContactException, DatabaseInsertionException, RegistrationIDsNULLException
 
-app = Flask(__name__)
-setup_db(app)
-limiter = Limiter(app, key_func=get_remote_address)
+# Constants region
 contact_fixed_length = 13
 api_key = 'AAAA6EwhWKo:APA91bHJiaWrXskFxQGQoybatbMLJxiDBC7nDT5hu7w8YYT1q_tZ2lnWqLjZeMpgPHjGYexZWiRhoq3ibxAUtkdyRLuIeripcVVi4-PzrvW2GcKJkWpbRCzSzd4NenMR8dGGSP931AUk'
+##################
+
+def create_app():
+    app = Flask(__name__)
+    setup_db(app)
+    CORS(app)
+    return app
+
+# Initializing app
+app = create_app()
+limiter = Limiter(app, key_func=get_remote_address)
+##################
 
 @app.route('/<path:path>')
 def send_js_path(path):
@@ -26,7 +37,8 @@ def index():
     return render_template('index.html')
 
 @app.route('/send-sms', methods=['POST'])
-@limiter.limit('2 per minute') # external config file can be used to configure the limit dynamically without being hardcoded
+@limiter.limit('3 per minute')
+# external config file can be used to configure the limit dynamically without being hardcoded
 def send_sms():
     body = request.get_json()
     client_id = body.get('id')
@@ -48,7 +60,9 @@ def send_sms():
     store_message_in_db(subject, message, client_id)
     #return frontend expected JSON
     return jsonify({
-        'success': True
+        'success': True,
+        'client_id': client_id,
+        'message': message
     }), 200
 
 def is_valid_contact_format(client_contact):
@@ -80,7 +94,7 @@ def store_message_in_db(subject, message, client_id):
 def send_notification():
     push_service = FCMNotification(api_key=api_key)
     body = request.get_json()
-    registration_ids = body.get('reg_ids')
+    registration_ids = body.get('tokens')
     notification_title = body.get('title')
     notification_body = body.get('body')
     
@@ -90,10 +104,21 @@ def send_notification():
         success = bool(result[0].get('success'))
     else:
         success = bool(result['success'])
-    #if success:
-    #    store_notification_in_db(notification_title, notification_body, client_id)
+    if success:
+        # The following database action could be eliminated as the API is not responsible for db actions
+        # Explanation:
+        # "handle_database_actions" function stores the passed tokens and the sent notification in database
+        # and it store the relation between them in third table (as their relation is Many to Many)
+        # Another alternatives:
+        # 1. use firestore db to store tokens and sent notifications
+        # 2. use mongodb as nosql db
+        # 3. log the notifications (sender, targeted token, title and body) in a log file for tracking and debugging purposes
+        handle_database_actions(notification_title, notification_body, registration_ids)
     return jsonify({
-        'success': success
+        'success': success,
+        'tokens': registration_ids,
+        'title': notification_title,
+        'body': notification_body
     }), 200
 
 def send_notification_to_devices(push_service, registration_ids, notification_title, notification_body):
@@ -105,10 +130,30 @@ def send_notification_to_devices(push_service, registration_ids, notification_ti
     else:
         return push_service.notify_single_device(registration_id=registration_ids, message_body=notification_body, message_title=notification_title)
 
-def store_notification_in_db(title, body, client_id):
+def handle_database_actions(title, body, registration_ids):
+    notification_id = store_notification_in_db(title, body)
+    store_tokens_notification_relation_in_db(registration_ids, notification_id)
+
+def store_notification_in_db(title, body):
     current_time = datetime.now()
-    new_notification = Notification(header=title, body=body, time=current_time, client_id=client_id)
-    new_notification.insert()
+    newNotification = Notification(title=title, body=body, time=current_time)
+    newNotification.insert()
+    newNotification_id = newNotification.id
+    return newNotification_id
+    
+def store_tokens_notification_relation_in_db(registration_ids, notification_id):
+    stored_tokens = Token.query.all()
+    stored_tokens = [_token.token for _token in stored_tokens]
+    for reg_id in registration_ids:
+        if reg_id not in stored_tokens:
+            newToken = Token(token=reg_id)
+            newToken.insert()
+            token_id = newToken.id
+        else:
+            existing_token = Token.query.filter_by(token=reg_id).first()
+            token_id = existing_token.id
+        token_notification_entry = TokenNotification(token_id=token_id, notification_id=notification_id)
+        token_notification_entry.insert()
 
 @app.route('/notify-topic', methods=['POST'])
 def notify_topic():
