@@ -6,12 +6,11 @@ from datetime import datetime
 
 from exceptions import DatabaseInsertionException
 
-database_filename = "swvl.psql"
-user = 'Yousif'
-pw = 'yousif'
-database_name = 'swvl'
-#project_dir = os.path.dirname(os.path.abspath(__file__))
-database_path = "postgresql://{}:{}@localhost:5432/{}".format(user, pw, database_name)
+user = os.environ.get('db_user')
+pw = os.environ.get('db_pw')
+database_name = os.environ.get('db_name')
+db_host = os.environ.get('db_host')
+database_path = "postgresql://{}:{}@{}:5432/{}".format(user, pw, db_host, database_name)
 
 db = SQLAlchemy()
 
