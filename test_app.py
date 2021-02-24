@@ -85,6 +85,18 @@ class TestApp(unittest.TestCase):
         self.assertTrue(res_data['body'])
         self.assertEqual(res_data['notification_id'], sent_notification.id)
 
+    # Testing HTTPException Handler
+    # Example:
+    def test_405_method_not_allowed(self):
+        # PATCH request is not allowed for endpoint '/send-notification'
+        # 405: Method not allowed is returned
+        res = self.client().patch('/send-notification')
+        res_data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 405)
+        self.assertEqual(res_data['success'], False)
+        self.assertEqual(res_data['message'], 'Method Not Allowed')
+
     # Testing Helper functions
     ##########################
     def test_is_valid_contact_format_with_invalid_contact(self):
