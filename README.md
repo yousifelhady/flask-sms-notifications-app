@@ -118,7 +118,7 @@ POST '/notify-topic'
 - Send notification to users subscribing to specific topic
 - Request Arguments: 'topic', 'title', 'body'
 - Returns: JSON Object contains 'success'
-- Sample: `curl http://127.0.0.1:5000/send-sms -X POST -H "Content-Type: application/json" -d "{"topic": "news", "title": "Notification Title", "body": "This is a topic notification body"}"`
+- Sample: `curl http://127.0.0.1:5000/notify-topic -X POST -H "Content-Type: application/json" -d "{"topic": "news", "title": "Notification Title", "body": "This is a topic notification body"}"`
 ```bash
     {
       "success": true
