@@ -1,6 +1,7 @@
 import os
 import unittest
 import json
+import time
 
 from app import app, is_valid_contact_format
 from models import Message, Notification
@@ -10,8 +11,10 @@ class TestApp(unittest.TestCase):
         self.app = app
         self.client = self.app.test_client
 
-        self.send_sms_json = {
-            'contact': "+201009129288",
+        self.invalid_contact = "01009129288"
+        self.valid_contact = "+201009129288"
+        self.send_valid_sms_json = {
+            'contact': self.valid_contact,
             'subject': 'testSubject',
             'message': 'test message body'
         }
@@ -28,8 +31,7 @@ class TestApp(unittest.TestCase):
             'title': "test notification title",
             'body': "test notification message body"
         }
-        self.invalid_contact = "01009129288"
-        self.valid_contact = "+201009129288"
+        
     def tearDown(self):
         pass
     
@@ -40,20 +42,21 @@ class TestApp(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
 
     def test_send_sms(self):
-        res = self.client().post('/send-sms', json=self.send_sms_json)
+        res = self.client().post('/send-sms', json=self.send_valid_sms_json)
         res_data = json.loads(res.data)
         sent_message = Message.query.order_by(Message.id.desc()).first()
         
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res_data['success'], True)
-        self.assertEqual(res_data['contact'], self.send_sms_json['contact'])
+        self.assertEqual(res_data['contact'], self.send_valid_sms_json['contact'])
         self.assertTrue(res_data['message'])
         self.assertEqual(res_data['message_id'], sent_message.id)
 
     def test_send_sms_limit(self):
+        #time.sleep(60)
         i = 4
         while i > 0:
-            res = self.client().post('/send-sms', json=self.send_sms_json)
+            res = self.client().post('/send-sms', json=self.send_valid_sms_json)
             i -= 1
         res_data = json.loads(res.data)
 
