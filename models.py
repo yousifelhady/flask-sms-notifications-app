@@ -45,7 +45,7 @@ class Client(db.Model):
         return {
             'id': self.id,
             'contact': self.contact,
-            'notifications': [notification.format() for notification in Notification.query.filter_by(client_id=self.id).all()],
+            'name': self.name,
             'messages': [message.format() for message in Message.query.filter_by(client_id=self.id).all()]
         }
     
@@ -141,7 +141,6 @@ class Message(db.Model):
         try:
             db.session.add(self)
             db.session.commit()
-            print(self)
         except Exception as ex:
             db.session.roll_back()
             raise DatabaseInsertionException(str(ex), 500)

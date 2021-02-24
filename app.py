@@ -52,8 +52,11 @@ def send_sms():
         raise InvalidContactException(client_contact, 400)
     
     client_name = client.name
+    if not client_name:
+        client_name = ""
     subject = body.get('subject')
-    message = f'Dear Mr/Mrs ' + client_name + ', '
+    # applying some message decorating
+    message = f'Dear Mr/Mrs ' + str(client_name) + ', '
     message += body.get('message')
     
     send_sms_to_client(client_contact, subject, message)
