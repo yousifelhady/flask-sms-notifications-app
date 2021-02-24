@@ -59,8 +59,6 @@ def send_sms():
     #return frontend expected JSON
     return jsonify({
         'success': True,
-        'contact': contact,
-        'message': message,
         'message_id': new_message_id
     }), 200
 
@@ -130,9 +128,6 @@ def send_notification():
     
     return jsonify({
         'success': success,
-        'tokens': filtered_tokens,
-        'title': notification_title,
-        'body': notification_body,
         'notification_id': notification_id
     }), 200
 
@@ -194,9 +189,6 @@ def notify_topic():
         status_code = 500
     return jsonify({
         'success': success,
-        'topic': topic_name,
-        'title': message_title,
-        'body': message_body
     }), status_code
 
 @app.errorhandler(HTTPException)
