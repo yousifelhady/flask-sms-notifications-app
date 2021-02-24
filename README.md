@@ -56,7 +56,7 @@ Application runs on 'http://127.0.0.1:5000/' or 'localhost:5000'
 3. This token shall be used to send notifications to the page, so save it in an external file for later usage
 
 Important Note:
-* If the root page remained static and no token appeared, you have to the localhost on "https"
+* If the root page remained static and no token appeared, you have to run the localhost on "https"
 * You can use a free software [ngrok](https://ngrok.com/) to achieve this, it is pretty simple and neat!
 
 ## APIs Documentation
@@ -103,7 +103,7 @@ POST '/notify-topic'
 #### POST '/send-notification'
 - Send notification to subscribed tokens using FCM (Firebase Cloud Messaging) under the hood
 - Request Arguments: 'tokens', 'title', 'body'
-- 'tokens' is a list of subscribed token which the notification shall be sent to, tokens have to be valid and correctly formated. 
+- 'tokens' is a list of subscribed token which the notification shall be sent to, tokens have to be valid and correctly formated
 - You can retrieve a token by running the root route of the application "http://127.0.0.1:5000", copy and paste the generated token
 - Returns: JSON Object contains 'success', 'notification_id'
 - Sample: `curl http://127.0.0.1:5000/send-notification -X POST -H "Content-Type: application/json" -d "{"tokens": ["dyimeAKczeP3UJ8ynvI1I2:APA91bHQFAK2d28Tyfg89zqWVrPynCCEXF9eNnRW705fFxEdDE4klEBsqlVsdWiXl3jkWykCQ503Nh4m6EeL3tNS7iR1mnCB9e_Q7Sw_wDd_N3nENiqwmpTV2e1blahBck03zhR9t4LJ"], "title": "Notification Title", "body": "This is a notification body"}"`
