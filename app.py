@@ -17,14 +17,14 @@ contact_fixed_length = 13
 api_key = 'AAAA6EwhWKo:APA91bHJiaWrXskFxQGQoybatbMLJxiDBC7nDT5hu7w8YYT1q_tZ2lnWqLjZeMpgPHjGYexZWiRhoq3ibxAUtkdyRLuIeripcVVi4-PzrvW2GcKJkWpbRCzSzd4NenMR8dGGSP931AUk'
 ##################
 
-def create_app():
+def initialize_app():
     app = Flask(__name__)
     setup_db(app)
     CORS(app)
     return app
 
 # Initializing app
-app = create_app()
+app = initialize_app()
 limiter = Limiter(app, key_func=get_remote_address)
 ##################
 
@@ -41,30 +41,26 @@ def index():
 # external config file can be used to configure the limit dynamically without being hardcoded
 def send_sms():
     body = request.get_json()
-    client_id = body.get('id')
-    client = Client.query.get(client_id)
+    contact = body.get('contact')
+    subject = body.get('subject')
+    message = body.get('message')
+
+    if not is_valid_contact_format(contact):
+        #if contact is not valid, raise exception with status code: 400 Bad Request
+        raise InvalidContactException(contact, 400)
+    
+    # Retrieve client object from database
+    client = Client.query.filter_by(contact=contact).first()
     if client is None:
         abort(404)
     
-    client_contact = client.contact
-    if not is_valid_contact_format(client_contact):
-        #if contact is not valid, raise exception with status code: 400 Bad Request
-        raise InvalidContactException(client_contact, 400)
-    
-    client_name = client.name
-    if not client_name:
-        client_name = ""
-    subject = body.get('subject')
-    # applying some message decorating
-    message = f'Dear Mr/Mrs ' + str(client_name) + ', '
-    message += body.get('message')
-    
-    send_sms_to_client(client_contact, subject, message)
-    store_message_in_db(subject, message, client_id)
+    decorated_message = decorate_message(message, client)
+    send_sms_to_contact(contact, subject, decorated_message)
+    store_message_in_db(subject, message, client.id)
     #return frontend expected JSON
     return jsonify({
         'success': True,
-        'client_id': client_id,
+        'contact': contact,
         'message': message
     }), 200
 
@@ -79,14 +75,23 @@ def is_valid_contact_format(client_contact):
     is_valid_contact_len = len(client_contact) == contact_fixed_length
     return is_valid_format and is_valid_contact and is_valid_contact_len
 
-def send_sms_to_client(client_contact, subject, message):
+def decorate_message(message, client):
+    # applying some message decoration (if required)
+    client_name = client.name
+    if not client_name:
+        client_name = ""
+    decorated_message = f'Dear Mr/Mrs ' + str(client_name) + ', '
+    decorated_message += message
+    return decorated_message
+
+def send_sms_to_contact(contact, subject, message):
     #integrate with real sms provider
     #example: callr or twillo
     #api = callr.Api('valeo_1', 'yousifelhady.1994')
-    #testSMS = api.call('sms.send', subject, client_contact, message, None)
+    #testSMS = api.call('sms.send', subject, contact, message, None)
     print('message subject: ' + subject)
     print('message body: ' + message)
-    print('has been sent to: ' + client_contact)
+    print('has been sent to: ' + contact)
 
 def store_message_in_db(subject, message, client_id):
     current_time = datetime.now()

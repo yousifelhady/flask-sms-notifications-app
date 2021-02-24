@@ -10,7 +10,7 @@ class TestApp(unittest.TestCase):
         self.client = self.app.test_client
 
         self.send_sms_json = {
-            'id': 2,
+            'contact': "+201009129288",
             'subject': 'testSubject',
             'message': 'testMessage'
         }
@@ -28,7 +28,7 @@ class TestApp(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res_data['success'], True)
-        self.assertEqual(res_data['client_id'], self.send_sms_json['id'])
+        self.assertEqual(res_data['contact'], self.send_sms_json['contact'])
 
     # def test_send_sms_limit(self):
     #     i = 4
