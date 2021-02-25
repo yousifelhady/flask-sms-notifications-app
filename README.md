@@ -1,6 +1,17 @@
 # flask-sms-notifications-app
-Flask based backend application that implements endpoints that can send SMSs (needs to be integrated with real service provider first) and can send notifications via FCM (Firebase Cloud Messaging) to registered users.
+Flask based backend application that implements endpoints that can send SMSs (needs to be integrated with real service provider) and can send notifications via FCM (Firebase Cloud Messaging) to registered users.
 The application integrates with a postgres database that keep records of the sent messages and notifications for tracking and history purposes.
+The whole project can run and execute using Docker-Compose.
+
+## Docker-Compose Setup
+1. Download [Docker](https://www.docker.com/) at your machine in order to be able to execute docker commands.
+2. Clone the project repo.
+3. Run CMD terminal from the project's directory and execute:
+```bash
+docker-compose up
+```
+4. Docker will setup the project's environement, install all the dependencies and handle the database connection.
+5. Jump to [API Documentation](https://github.com/yousifelhady/flask-sms-notifications-app/edit/main/README#L85) to start using and testing the endpoints.
 
 ## Pre-requisites to run the project
 1. install [Python](https://www.python.org/downloads/release) latest version
@@ -39,16 +50,10 @@ set FLASK_APP=app.py
 ```
    then run the flask migrate commands as following:
 ```bash
-flask db migrate
 flask db upgrade
 ```
    hence, database tables shall be created (they will be initially empty). <br><br>
-8. Import the database data included in the project's directory, so you can have some raw data in your newly created database
-```bash
-psql database_name < database_file.psql
-```
-   or you can leave it fresh and start adding your own data manually. <br><br>
-9. To verify that the database tables have been created, type the following in the CMD terminal:
+8. To verify that the database tables have been created, type the following in the CMD terminal:
 ```bash
 psql database_name
 ```
@@ -83,7 +88,7 @@ In order to execute and test the API endpoints, you can use either [Postman](htt
 - Base URL: At present this app can only be run locally and is not hosted as a base URL. 
 - The backend app runs at `http://localhost:5000`
 - Authentication: This version of the application does not require authentication.
-- Make sure to connect to the Postgres Database by configuring its login data at `models.py`
+- Make sure to connect to the Postgres database by configuring its login data at `models.py`
 
 ### Error Handling
 HTTP Errors are returned as JSON objects in the following format:
@@ -122,7 +127,7 @@ POST '/notifications/topic'
 - Send notification to subscribed tokens using FCM (Firebase Cloud Messaging) under the hood.
 - Request Arguments: 'tokens', 'title', 'body'
 - 'tokens' is a list of subscribed tokens to which the notification shall be sent, tokens have to be valid and correctly formated.
-- You can retrieve a token by running the root route of the application "http://localhost:5000", copy and paste the generated token.
+- You can retrieve a token by running the root route of the application "http://localhost:5000", copy and paste the generated token to Postman or Curl as shown in the sample bellow.
 - Returns: JSON Object contains 'success', 'notification_id'
 - Sample: `curl http://localhost:5000/notifications/tokens -X POST -H "Content-Type: application/json" -d "{"tokens": ["dyimeAKczeP3UJ8ynvI1I2:APA91bHQFAK2d28Tyfg89zqWVrPynCCEXF9eNnRW705fFxEdDE4klEBsqlVsdWiXl3jkWykCQ503Nh4m6EeL3tNS7iR1mnCB9e_Q7Sw_wDd_N3nENiqwmpTV2e1blahBck03zhR9t4LJ"], "title": "Notification Title", "body": "This is a notification body"}"`
 ```bash
@@ -134,6 +139,7 @@ POST '/notifications/topic'
 
 #### POST '/notifications/topic'
 - Send notification to users who are subscribing to a specific topic.
+- The Notification will be sent anyway and users who are subscribing to the topic shall receive it.
 - Request Arguments: 'topic', 'title', 'body'
 - Returns: JSON Object contains 'success'
 - Sample: `curl http://localhost:5000/notifications/topic -X POST -H "Content-Type: application/json" -d "{"topic": "news", "title": "Notification Title", "body": "This is a topic notification body"}"`
@@ -144,12 +150,15 @@ POST '/notifications/topic'
 ```
 
 ## Testing
-The project files contain file `app_test.py`, this file contains all the unit tests that test the API endpoints
+The project files contain a file `app_test.py`, this file contains all the unit tests that test the API endpoints
 To run the tests, open CMD terminal and execute the following (make sure that the server is up and running)
 ```bash
 python test_app.py
 ```
 Test cases will be executed and result will be displayed in the CMD terminal incase of success or failure.
+
+## Acknowledgement
+I would like to acknowledge Software Engineer/ [Hussein Khaled](https://github.com/husseinkk) for his contribution and help in setting up Docker-compose for the project.
 
 ## Authors
 Software Engineer/ Yousif Elhady
