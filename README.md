@@ -24,8 +24,8 @@ createdb database_name
     - database_name
     - user
     - password
-    - localhost (default: localhost)
-or configure their values in the environment variables at your machine
+    - localhost (default: localhost).
+=> or configure their values in the environment variables at your machine
 4. Migrate database using database migrations, using flask migrate
    but first you have to set the flask app in the environment variable "FLASK_APP" as following:
 ```bash
