@@ -30,7 +30,6 @@ class Client(db.Model):
     __tablename__ = 'clients'
     id = Column(Integer, primary_key=True)
     contact = Column(String)
-    name = Column(String)
     messages = db.relationship('Message', backref='client_message', cascade='all,delete', lazy=True)
     
     def insert(self):
@@ -44,12 +43,11 @@ class Client(db.Model):
         return {
             'id': self.id,
             'contact': self.contact,
-            'name': self.name,
             'messages': [message.format() for message in Message.query.filter_by(client_id=self.id).all()]
         }
     
     def __repr__(self):
-        return f'client id: {self.id}, contact: {self.contact}, name: {self.name}'
+        return f'client id: {self.id}, contact: {self.contact}'
     
 class Notification(db.Model):
     __tablename__ = 'notifications'
@@ -105,7 +103,7 @@ class Token(db.Model):
 # Tokens and Notifications as:
 # Token can receive multiple notifications &
 # Notification can be sent to multiple tokens
-# This is not essential to have and can be replaced with nosql database for simplicity, 
+# This maybe not essential to have and can be replaced with nosql database for simplicity, 
 # but I implemented it for data tracking purpose
 class TokenNotification(db.Model):
     __tablename__ = 'tokennotifications'

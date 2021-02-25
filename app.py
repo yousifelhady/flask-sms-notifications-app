@@ -10,7 +10,7 @@ from pyfcm import FCMNotification
 
 from models import Client, Message, Notification, Token, TokenNotification, setup_db
 from exceptions import InvalidContactException, DatabaseInsertionException, RegistrationIDsNULLException
-from config import api_key, api_access_limiter
+from config import api_key, api_limit_per_minute
 
 # Constants region
 contact_fixed_length = 13
@@ -37,7 +37,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/smss', methods=['POST'])
-@limiter.limit(str(api_access_limiter) + '/minute')
+@limiter.limit(str(api_limit_per_minute) + '/minute')
 def send_sms():
     body = request.get_json()
     contact = body.get('contact')
@@ -48,14 +48,15 @@ def send_sms():
         #if contact is not valid, raise exception with status code: 400 Bad Request
         raise InvalidContactException(contact, 400)
     
-    # Retrieve client object from database
+    send_sms_to_contact(contact, subject, message)
+    # Retrieve client object from database (if exist)
     client = Client.query.filter_by(contact=contact).first()
     if client is None:
-        abort(404)
-    
-    decorated_message = decorate_message(message, client)
-    send_sms_to_contact(contact, subject, decorated_message)
-    new_message_id = store_message_in_db(subject, message, client.id)
+        # If client does not exist in database, create a record for it
+        client_id = store_client_in_db(contact)
+    else:
+        client_id = client.id
+    new_message_id = store_message_in_db(subject, message, client_id)
     #return frontend expected JSON
     return jsonify({
         'success': True,
@@ -74,16 +75,10 @@ def is_valid_contact_format(client_contact):
     is_valid_contact_len = len(client_contact) == contact_fixed_length
     return is_valid_format and is_valid_contact and is_valid_contact_len
 
-# Decorate the sent message before sending it
-# Note: It is not necessary and can be eliminated if it is not required to have
-def decorate_message(message, client):
-    # applying some message decoration
-    client_name = client.name
-    if not client_name:
-        client_name = ""
-    decorated_message = f'Dear Mr/Mrs ' + str(client_name) + ', '
-    decorated_message += message
-    return decorated_message
+def store_client_in_db(contact):
+    newClient = Client(contact=contact)
+    newClient.insert()
+    return newClient.id
 
 def send_sms_to_contact(contact, subject, message):
     #integrate with real sms provider
