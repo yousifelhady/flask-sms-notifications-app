@@ -122,7 +122,7 @@ POST '/notifications/topic'
 - Send notification to subscribed tokens using FCM (Firebase Cloud Messaging) under the hood.
 - Request Arguments: 'tokens', 'title', 'body'
 - 'tokens' is a list of subscribed tokens to which the notification shall be sent, tokens have to be valid and correctly formated.
-- You can retrieve a token by running the root route of the application `http://localhost:5000`, copy and paste the generated token.
+- You can retrieve a token by running the root route of the application "http://localhost:5000", copy and paste the generated token.
 - Returns: JSON Object contains 'success', 'notification_id'
 - Sample: `curl http://localhost:5000/notifications/tokens -X POST -H "Content-Type: application/json" -d "{"tokens": ["dyimeAKczeP3UJ8ynvI1I2:APA91bHQFAK2d28Tyfg89zqWVrPynCCEXF9eNnRW705fFxEdDE4klEBsqlVsdWiXl3jkWykCQ503Nh4m6EeL3tNS7iR1mnCB9e_Q7Sw_wDd_N3nENiqwmpTV2e1blahBck03zhR9t4LJ"], "title": "Notification Title", "body": "This is a notification body"}"`
 ```bash
