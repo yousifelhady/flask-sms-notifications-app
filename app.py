@@ -35,7 +35,7 @@ def send_js_path(path):
 def index():
     return render_template('index.html')
 
-@app.route('/send-sms', methods=['POST'])
+@app.route('/smss', methods=['POST'])
 @limiter.limit('3 per minute')
 # external config file can be used to configure the limit dynamically without being hardcoded
 def send_sms():
@@ -100,8 +100,8 @@ def store_message_in_db(subject, message, client_id):
     new_message.insert()
     return new_message.id
 
-@app.route('/send-notification', methods=['POST'])
-def send_notification():
+@app.route('/notifications/tokens', methods=['POST'])
+def send_notification_to_tokens():
     body = request.get_json()
     tokens = body.get('tokens')
     notification_title = body.get('title')
@@ -110,7 +110,7 @@ def send_notification():
     # Check that passed tokens exist in database
     # Such that the api should send notifications to only subscribed tokens
     filtered_tokens = filter_tokens(tokens)
-    result = send_notification_to_devices(filtered_tokens, notification_title, notification_body)
+    result = send_notification(filtered_tokens, notification_title, notification_body)
     print(result)
 
     if isinstance(result, list):
@@ -120,11 +120,11 @@ def send_notification():
     if success:
         # The following database action could be eliminated as the API should not be responsible for db actions
         # Explanation:
-        # "store_notification" function stores the sent notification in database
+        # "handle_notification_storage" function stores the sent notification in database
         # and it creates a relation between the sent notifications and the tokens (as their relation is Many to Many)
         # Another alternative:
         # log the notifications (sender, targeted token, title and body) in a log file for tracking and debugging purposes
-        notification_id = store_notification(notification_title, notification_body, filtered_tokens)
+        notification_id = handle_notification_storage(notification_title, notification_body, filtered_tokens)
     
     return jsonify({
         'success': success,
@@ -143,7 +143,7 @@ def filter_tokens(tokens):
             filtered_tokens.append(token)
     return filtered_tokens
 
-def send_notification_to_devices(tokens, notification_title, notification_body):
+def send_notification(tokens, notification_title, notification_body):
     push_service = FCMNotification(api_key=api_key)
     if isinstance(tokens, list):
         # if passed registration ids list is empty, raise exception with status code: 400 Bad Request
@@ -153,7 +153,7 @@ def send_notification_to_devices(tokens, notification_title, notification_body):
     else:
         return push_service.notify_single_device(registration_id=tokens, message_body=notification_body, message_title=notification_title)
 
-def store_notification(title, body, tokens):
+def handle_notification_storage(title, body, tokens):
     notification_id = store_notification_in_db(title, body)
     store_tokens_notification_relation_in_db(tokens, notification_id)
     return notification_id
@@ -173,8 +173,8 @@ def store_tokens_notification_relation_in_db(tokens, notification_id):
             token_notification_entry = TokenNotification(token_id=token_obj.id, notification_id=notification_id)
             token_notification_entry.insert()
 
-@app.route('/notify-topic', methods=['POST'])
-def notify_topic():
+@app.route('/notifications/topic', methods=['POST'])
+def send_notification_to_topic():
     body = request.get_json()
     topic_name = body.get('topic')
     message_body = body.get('body')

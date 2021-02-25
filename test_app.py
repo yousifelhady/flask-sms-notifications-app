@@ -42,7 +42,7 @@ class TestApp(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
 
     def test_send_sms(self):
-        res = self.client().post('/send-sms', json=self.send_valid_sms_json)
+        res = self.client().post('/smss', json=self.send_valid_sms_json)
         res_data = json.loads(res.data)
         sent_message = Message.query.order_by(Message.id.desc()).first()
         
@@ -54,22 +54,22 @@ class TestApp(unittest.TestCase):
         #time.sleep(60)
         i = 4
         while i > 0:
-            res = self.client().post('/send-sms', json=self.send_valid_sms_json)
+            res = self.client().post('/smss', json=self.send_valid_sms_json)
             i -= 1
         res_data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 429)
         self.assertEqual(res_data['success'], False)
 
-    def test_notify_topic(self):
-        res = self.client().post('/notify-topic', json=self.send_topic_json)
+    def test_send_notification_to_topic(self):
+        res = self.client().post('/notifications/topic', json=self.send_topic_json)
         res_data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res_data['success'], True)
 
-    def test_send_notification(self):
-        res = self.client().post('/send-notification', json=self.send_notification_json)
+    def test_send_notification_to_tokens(self):
+        res = self.client().post('/notifications/tokens', json=self.send_notification_json)
         res_data = json.loads(res.data)
         sent_notification = Notification.query.order_by(Notification.id.desc()).first()
 
@@ -80,9 +80,9 @@ class TestApp(unittest.TestCase):
     # Testing HTTPException Handler
     # Example:
     def test_405_method_not_allowed(self):
-        # PATCH request is not allowed for endpoint '/send-notification'
+        # PATCH request is not allowed for endpoint '/notifications/tokens'
         # 405: Method not allowed is returned
-        res = self.client().patch('/send-notification')
+        res = self.client().patch('/notifications/tokens')
         res_data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 405)
