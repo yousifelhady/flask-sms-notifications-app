@@ -1,0 +1,23 @@
+version: "2.0"
+
+services:
+ postgresinstance:
+  image: postgres
+  restart: always
+  environment:
+   POSTGRES_PASSWORD: flask_password
+   POSTGRES_USER: flask_user
+   POSTGRES_DB: flask_db
+
+ flask_instance:
+  build: .
+  ports:
+   - "5000:5000"
+  volumes:
+   - ".:/flask-sms-notifications-app"
+  entrypoint: ./entrypoint.sh
+  environment:
+   - db_user=flask_user
+   - db_pw=flask_password
+   - db_name=flask_db
+   - db_host=postgresinstance 
