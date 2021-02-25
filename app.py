@@ -10,10 +10,11 @@ from pyfcm import FCMNotification
 
 from models import Client, Message, Notification, Token, TokenNotification, setup_db
 from exceptions import InvalidContactException, DatabaseInsertionException, RegistrationIDsNULLException
+from config import api_key, api_access_limiter
 
 # Constants region
 contact_fixed_length = 13
-api_key = 'AAAA6EwhWKo:APA91bHJiaWrXskFxQGQoybatbMLJxiDBC7nDT5hu7w8YYT1q_tZ2lnWqLjZeMpgPHjGYexZWiRhoq3ibxAUtkdyRLuIeripcVVi4-PzrvW2GcKJkWpbRCzSzd4NenMR8dGGSP931AUk'
+api_key = api_key
 ##################
 
 def initialize_app():
@@ -36,8 +37,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/smss', methods=['POST'])
-@limiter.limit('3 per minute')
-# external config file can be used to configure the limit dynamically without being hardcoded
+@limiter.limit(str(api_access_limiter) + '/minute')
 def send_sms():
     body = request.get_json()
     contact = body.get('contact')
