@@ -11,8 +11,9 @@ The whole project can run and execute using Docker-Compose.
 docker-compose up
 ```
 4. Docker will setup the project's environement, install all the dependencies and handle the database connection.
-5. Jump to [API Documentation](https://github.com/yousifelhady/flask-sms-notifications-app/blob/main/README#L85) to start using and testing the endpoints.
-<br><br>
+5. Jump to "API Documentation" section to start using and testing the endpoints.
+<br>
+
 ## Pre-requisites to run the project
 1. install [Python](https://www.python.org/downloads/release) latest version
 2. install [Postgres](https://www.postgresql.org/download/) software according to your OS
