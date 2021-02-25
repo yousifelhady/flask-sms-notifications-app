@@ -66,7 +66,7 @@ class TestApp(unittest.TestCase):
         res = self.client().post('/smss', json=self.invalid_sms_json)
         res_data = json.loads(res.data)
         
-        self.assertEqual(res.status_code, 422)
+        self.assertEqual(res.status_code, 400)
         self.assertEqual(res_data['success'], False)
 
     def test_send_sms_limit(self):
@@ -91,7 +91,7 @@ class TestApp(unittest.TestCase):
         res = self.client().post('/notifications/topic', json=self.invalid_topic_json)
         res_data = json.loads(res.data)
 
-        self.assertEqual(res.status_code, 422)
+        self.assertEqual(res.status_code, 400)
         self.assertEqual(res_data['success'], False)
 
     def test_send_notification_to_tokens(self):
@@ -107,7 +107,14 @@ class TestApp(unittest.TestCase):
         res = self.client().post('/notifications/tokens', json=self.invalid_notification_json)
         res_data = json.loads(res.data)
 
-        self.assertEqual(res.status_code, 422)
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res_data['success'], False)
+
+    def test_send_notification_to_tokens_no_json_body(self):
+        res = self.client().post('/notifications/tokens')
+        res_data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 400)
         self.assertEqual(res_data['success'], False)
 
     # Testing HTTPException Handler

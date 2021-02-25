@@ -9,7 +9,7 @@ import re
 from pyfcm import FCMNotification
 
 from models import Client, Message, Notification, Token, TokenNotification, setup_db
-from exceptions import InvalidContactException, DatabaseInsertionException, RegistrationIDsNULLException, JSONBodyException
+from exceptions import InvalidContactException, DatabaseInsertionException, RegistrationIDsNULLException, JSONBodyFormatException, MissingJSONBodyException
 from config import api_key, api_limit_per_minute
 
 # Constants region
@@ -40,8 +40,10 @@ def index():
 @limiter.limit(str(api_limit_per_minute) + '/minute')
 def send_sms():
     body = request.get_json()
+    if not body:
+        raise MissingJSONBodyException(status_code=400)
     if 'contact' not in body or 'subject' not in body or 'message' not in body:
-        raise JSONBodyException(status_code=422)
+        raise JSONBodyFormatException(status_code=400)
 
     contact = body.get('contact')
     subject = body.get('subject')
@@ -101,8 +103,10 @@ def store_message_in_db(subject, message, client_id):
 @app.route('/notifications/tokens', methods=['POST'])
 def send_notification_to_tokens():
     body = request.get_json()
+    if not body:
+        raise MissingJSONBodyException(status_code=400)
     if 'tokens' not in body or 'title' not in body or 'body' not in body:
-        raise JSONBodyException(status_code=422)
+        raise JSONBodyFormatException(status_code=400)
 
     tokens = body.get('tokens')
     notification_title = body.get('title')
@@ -170,8 +174,10 @@ def store_tokens_notification_relation_in_db(tokens, notification_id):
 @app.route('/notifications/topic', methods=['POST'])
 def send_notification_to_topic():
     body = request.get_json()
+    if not body:
+        raise MissingJSONBodyException(status_code=400)
     if 'topic' not in body or 'title' not in body or 'body' not in body:
-        raise JSONBodyException(status_code=422)
+        raise JSONBodyFormatException(status_code=400)
     
     topic_name = body.get('topic')
     message_title = body.get('title')
@@ -221,12 +227,20 @@ def hande_RegistrationIDsNULLException(error):
         'message': "Tokens list cannot be empty / nulled list"
     }), error.status_code
 
-@app.errorhandler(JSONBodyException)
-def hande_JSONBodyException(error):
+@app.errorhandler(JSONBodyFormatException)
+def hande_JSONBodyFormatException(error):
     return jsonify({
         'success': False,
         'error': error.status_code,
-        'message': "Passed JSON body is incorrect"
+        'message': "Passed JSON body format is incorrect"
+    }), error.status_code
+
+@app.errorhandler(MissingJSONBodyException)
+def hande_MissingJSONBodyException(error):
+    return jsonify({
+        'success': False,
+        'error': error.status_code,
+        'message': "Method cannot have empty JSON body"
     }), error.status_code
 
 if __name__ == "__main__":
