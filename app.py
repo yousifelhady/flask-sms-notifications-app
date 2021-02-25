@@ -9,7 +9,7 @@ import re
 from pyfcm import FCMNotification
 
 from models import Client, Message, Notification, Token, TokenNotification, setup_db
-from exceptions import InvalidContactException, DatabaseInsertionException, RegistrationIDsNULLException
+from exceptions import InvalidContactException, DatabaseInsertionException, RegistrationIDsNULLException, JSONBodyExcpetion
 from config import api_key, api_limit_per_minute
 
 # Constants region
@@ -40,6 +40,9 @@ def index():
 @limiter.limit(str(api_limit_per_minute) + '/minute')
 def send_sms():
     body = request.get_json()
+    if 'contact' not in body or 'subject' not in body or 'message' not in body:
+        raise JSONBodyExcpetion(status_code=422)
+
     contact = body.get('contact')
     subject = body.get('subject')
     message = body.get('message')
@@ -216,6 +219,14 @@ def hande_RegistrationIDsNULLException(error):
         'success': False,
         'error': error.status_code,
         'message': "Registration IDs cannot be nulled list"
+    }), error.status_code
+
+@app.errorhandler(JSONBodyExcpetion)
+def hande_JSONBodyExcpetion(error):
+    return jsonify({
+        'success': False,
+        'error': error.status_code,
+        'message': "Passed JSON body is incorrect"
     }), error.status_code
 
 if __name__ == "__main__":

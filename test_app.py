@@ -18,6 +18,10 @@ class TestApp(unittest.TestCase):
             'subject': 'testSubject',
             'message': 'test message body'
         }
+        self.send_invalid_sms_json_format = {
+            'subject': 'testSubject',
+            'message': 'test message body'
+        }
         self.send_topic_json = {
             'topic': "news",
             'title': 'test topic title',
@@ -49,6 +53,13 @@ class TestApp(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res_data['success'], True)
         self.assertEqual(res_data['message_id'], sent_message.id)
+
+    def test_send_sms_invalid_json_format(self):
+        res = self.client().post('/smss', json=self.send_invalid_sms_json_format)
+        res_data = json.loads(res.data)
+        
+        self.assertEqual(res.status_code, 422)
+        self.assertEqual(res_data['success'], False)
 
     def test_send_sms_limit(self):
         #time.sleep(60)

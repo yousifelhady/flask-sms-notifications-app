@@ -14,3 +14,7 @@ class DatabaseInsertionException(Exception):
 class RegistrationIDsNULLException(Exception):
     def __init__(self, status_code):
         self.status_code = status_code
+
+class JSONBodyExcpetion(Exception):
+    def __init__(self, status_code):
+        self.status_code = status_code
