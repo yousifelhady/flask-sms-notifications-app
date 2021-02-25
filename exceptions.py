@@ -15,6 +15,6 @@ class RegistrationIDsNULLException(Exception):
     def __init__(self, status_code):
         self.status_code = status_code
 
-class JSONBodyExcpetion(Exception):
+class JSONBodyException(Exception):
     def __init__(self, status_code):
         self.status_code = status_code

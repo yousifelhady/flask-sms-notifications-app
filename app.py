@@ -9,7 +9,7 @@ import re
 from pyfcm import FCMNotification
 
 from models import Client, Message, Notification, Token, TokenNotification, setup_db
-from exceptions import InvalidContactException, DatabaseInsertionException, RegistrationIDsNULLException, JSONBodyExcpetion
+from exceptions import InvalidContactException, DatabaseInsertionException, RegistrationIDsNULLException, JSONBodyException
 from config import api_key, api_limit_per_minute
 
 # Constants region
@@ -41,7 +41,7 @@ def index():
 def send_sms():
     body = request.get_json()
     if 'contact' not in body or 'subject' not in body or 'message' not in body:
-        raise JSONBodyExcpetion(status_code=422)
+        raise JSONBodyException(status_code=422)
 
     contact = body.get('contact')
     subject = body.get('subject')
@@ -101,14 +101,14 @@ def store_message_in_db(subject, message, client_id):
 @app.route('/notifications/tokens', methods=['POST'])
 def send_notification_to_tokens():
     body = request.get_json()
+    if 'tokens' not in body or 'title' not in body or 'body' not in body:
+        raise JSONBodyException(status_code=422)
+
     tokens = body.get('tokens')
     notification_title = body.get('title')
     notification_body = body.get('body')
 
-    # Check that passed tokens exist in database
-    # Such that the api should send notifications to only subscribed tokens
-    filtered_tokens = filter_tokens(tokens)
-    result = send_notification(filtered_tokens, notification_title, notification_body)
+    result = send_notification(tokens, notification_title, notification_body)
     print(result)
 
     if isinstance(result, list):
@@ -116,35 +116,23 @@ def send_notification_to_tokens():
     else:
         success = bool(result['success'])
     if success:
-        # The following database action could be eliminated as the API should not be responsible for db actions
+        # The following database action could be remove (if not required) as the API should not be responsible for db actions
         # Explanation:
-        # "handle_notification_storage" function stores the sent notification in database
-        # and it creates a relation between the sent notifications and the tokens (as their relation is Many to Many)
+        # "handle_notification_storage" function stores the sent notification and targeted tokens in database
+        # and it creates a relation between the sent notification and the tokens (as their relation is Many to Many)
         # Another alternative:
-        # log the notifications (sender, targeted token, title and body) in a log file for tracking and debugging purposes
-        notification_id = handle_notification_storage(notification_title, notification_body, filtered_tokens)
+        # log the notification's (sender, targeted token, title and body) in a log file for tracking and debugging purposes
+        notification_id = handle_notification_storage(notification_title, notification_body, tokens)
     
     return jsonify({
         'success': success,
         'notification_id': notification_id
     }), 200
 
-# A method that filters passed tokens with the tokens existing in the database
-# it returns filtered tokens which are the ones that exist in database 
-# and discard the ones that does not exist in database
-def filter_tokens(tokens):
-    all_existing_tokens_in_db = Token.query.all()
-    all_existing_tokens = [_token.token for _token in all_existing_tokens_in_db]
-    filtered_tokens = []
-    for token in tokens:
-        if token in all_existing_tokens:
-            filtered_tokens.append(token)
-    return filtered_tokens
-
 def send_notification(tokens, notification_title, notification_body):
     push_service = FCMNotification(api_key=api_key)
     if isinstance(tokens, list):
-        # if passed registration ids list is empty, raise exception with status code: 400 Bad Request
+        # if passed tokens list is empty, raise exception with status code: 400 Bad Request
         if tokens == []:
             raise RegistrationIDsNULLException(status_code=400)
         return push_service.notify_multiple_devices(registration_ids=tokens, message_body=notification_body, message_title=notification_title)
@@ -163,20 +151,32 @@ def store_notification_in_db(title, body):
     return newNotification.id
 
 # Store a relation between the sent notification id and targeted tokens ids
-# So the history of notifications and their recipients are maintained 
+# So the history of notifications and their recipients are maintained.
+# If tokens are not existing in database, they will be stored too
 def store_tokens_notification_relation_in_db(tokens, notification_id):
+    stored_tokens = Token.query.all()
+    stored_tokens = [_token.token for _token in stored_tokens]
     for token in tokens:
-        token_obj = Token.query.filter_by(token=token).first()
-        if token_obj is not None:
-            token_notification_entry = TokenNotification(token_id=token_obj.id, notification_id=notification_id)
-            token_notification_entry.insert()
+        if token not in stored_tokens:
+            newToken = Token(token=token)
+            newToken.insert()
+            token_id = newToken.id
+        else:
+            existing_token = Token.query.filter_by(token=token).first()
+            token_id = existing_token.id
+        token_notification_entry = TokenNotification(token_id=token_id, notification_id=notification_id)
+        token_notification_entry.insert()
 
 @app.route('/notifications/topic', methods=['POST'])
 def send_notification_to_topic():
     body = request.get_json()
+    if 'topic' not in body or 'title' not in body or 'body' not in body:
+        raise JSONBodyException(status_code=422)
+    
     topic_name = body.get('topic')
-    message_body = body.get('body')
     message_title = body.get('title')
+    message_body = body.get('body')
+    
     push_service = FCMNotification(api_key=api_key)
     result = push_service.notify_topic_subscribers(topic_name=topic_name, message_body=message_body, message_title=message_title)
     print(result)
@@ -218,11 +218,11 @@ def hande_RegistrationIDsNULLException(error):
     return jsonify({
         'success': False,
         'error': error.status_code,
-        'message': "Registration IDs cannot be nulled list"
+        'message': "Tokens list cannot be empty / nulled list"
     }), error.status_code
 
-@app.errorhandler(JSONBodyExcpetion)
-def hande_JSONBodyExcpetion(error):
+@app.errorhandler(JSONBodyException)
+def hande_JSONBodyException(error):
     return jsonify({
         'success': False,
         'error': error.status_code,

@@ -13,25 +13,33 @@ class TestApp(unittest.TestCase):
 
         self.invalid_contact = "01009129288"
         self.valid_contact = "+201009129288"
-        self.send_valid_sms_json = {
+        self.sms_json = {
             'contact': self.valid_contact,
             'subject': 'testSubject',
             'message': 'test message body'
         }
-        self.send_invalid_sms_json_format = {
+        self.invalid_sms_json = {
             'subject': 'testSubject',
             'message': 'test message body'
         }
-        self.send_topic_json = {
+        self.topic_json = {
             'topic': "news",
             'title': 'test topic title',
             'body': 'test topic message body'
         }
-        self.send_notification_json = {
+        self.invalid_topic_json = {
+            'title': 'test topic title',
+            'body': 'test topic message body'
+        }
+        self.notification_json = {
             'tokens': [
                 "dTWVMWRcwXARbMwcMBrz9V:APA91bHiaBYFTK_toYgFto3kNdlE9TaoJPPhEMSu1b0Yob20QH8D9j2RWQTalFgmJPv9oiCac-DBnexkd-rlsVhqGbcH0vqwZVPW2Q3tok1xQ56o9OJFUnBRaAjIHredgQkNZODi8xU2",
                 "dyimeAKczeP3UJ8ynvI1I2:APA91bHQFAK2d28Tyfg89zqWVrPynCCEXF9eNnRW705fFxEdDE4klEBsqlVsdWiXl3jkWykCQ503Nh4m6EeL3tNS7iR1mnCB9e_Q7Sw_wDd_N3nENiqwmpTV2e1blahBck03zhR9t4LJ"
             ],
+            'title': "test notification title",
+            'body': "test notification message body"
+        }
+        self.invalid_notification_json = {
             'title': "test notification title",
             'body': "test notification message body"
         }
@@ -46,7 +54,7 @@ class TestApp(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
 
     def test_send_sms(self):
-        res = self.client().post('/smss', json=self.send_valid_sms_json)
+        res = self.client().post('/smss', json=self.sms_json)
         res_data = json.loads(res.data)
         sent_message = Message.query.order_by(Message.id.desc()).first()
         
@@ -55,7 +63,7 @@ class TestApp(unittest.TestCase):
         self.assertEqual(res_data['message_id'], sent_message.id)
 
     def test_send_sms_invalid_json_format(self):
-        res = self.client().post('/smss', json=self.send_invalid_sms_json_format)
+        res = self.client().post('/smss', json=self.invalid_sms_json)
         res_data = json.loads(res.data)
         
         self.assertEqual(res.status_code, 422)
@@ -65,7 +73,7 @@ class TestApp(unittest.TestCase):
         #time.sleep(60)
         i = 4
         while i > 0:
-            res = self.client().post('/smss', json=self.send_valid_sms_json)
+            res = self.client().post('/smss', json=self.sms_json)
             i -= 1
         res_data = json.loads(res.data)
 
@@ -73,20 +81,34 @@ class TestApp(unittest.TestCase):
         self.assertEqual(res_data['success'], False)
 
     def test_send_notification_to_topic(self):
-        res = self.client().post('/notifications/topic', json=self.send_topic_json)
+        res = self.client().post('/notifications/topic', json=self.topic_json)
         res_data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res_data['success'], True)
 
+    def test_send_notification_to_topic_invalid_json_format(self):
+        res = self.client().post('/notifications/topic', json=self.invalid_topic_json)
+        res_data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 422)
+        self.assertEqual(res_data['success'], False)
+
     def test_send_notification_to_tokens(self):
-        res = self.client().post('/notifications/tokens', json=self.send_notification_json)
+        res = self.client().post('/notifications/tokens', json=self.notification_json)
         res_data = json.loads(res.data)
         sent_notification = Notification.query.order_by(Notification.id.desc()).first()
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res_data['success'], True)
         self.assertEqual(res_data['notification_id'], sent_notification.id)
+
+    def test_send_notification_to_tokens_invalid_json_format(self):
+        res = self.client().post('/notifications/tokens', json=self.invalid_notification_json)
+        res_data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 422)
+        self.assertEqual(res_data['success'], False)
 
     # Testing HTTPException Handler
     # Example:
