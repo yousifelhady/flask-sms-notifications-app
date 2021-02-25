@@ -1,6 +1,6 @@
 # flask-sms-notifications-app
 Flask based backend application that implements endpoints that can send SMSs (needs to be integrated with real service provider) and can send notifications via FCM (Firebase Cloud Messaging) to registered users.
-The application integrates with a postgres database that keep records of the sent messages and notifications for tracking and history purposes.
+The application integrates with a postgres database that keep records of the sent messages and notifications for tracking and history purposes.<br>
 The whole project can run and execute using Docker-Compose.
 
 ## Docker-Compose Setup
@@ -11,7 +11,7 @@ The whole project can run and execute using Docker-Compose.
 docker-compose up
 ```
 4. Docker will setup the project's environement, install all the dependencies and handle the database connection.
-5. Jump to "API Documentation" section to start using and testing the endpoints.
+5. Skip the following headers and Jump to "API Documentation" section to start using and testing the endpoints.
 
 ## Pre-requisites to run the project
 1. Install [Python](https://www.python.org/downloads/release) latest version
