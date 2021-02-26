@@ -5,6 +5,7 @@ import time
 
 from app import app, is_valid_contact_format
 from models import Message, Notification
+from config import api_limit_per_minute
 
 class TestApp(unittest.TestCase):
     def setUp(self):
@@ -71,7 +72,7 @@ class TestApp(unittest.TestCase):
 
     def test_send_sms_limit(self):
         #time.sleep(60)
-        i = 4
+        i = api_limit_per_minute + 1
         while i > 0:
             res = self.client().post('/smss', json=self.sms_json)
             i -= 1

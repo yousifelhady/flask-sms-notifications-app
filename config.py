@@ -2,4 +2,4 @@
 api_key = 'AAAA6EwhWKo:APA91bHJiaWrXskFxQGQoybatbMLJxiDBC7nDT5hu7w8YYT1q_tZ2lnWqLjZeMpgPHjGYexZWiRhoq3ibxAUtkdyRLuIeripcVVi4-PzrvW2GcKJkWpbRCzSzd4NenMR8dGGSP931AUk'
 
 # API Limiter
-api_limit_per_minute = 3
+api_limit_per_minute = 5
