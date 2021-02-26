@@ -100,8 +100,8 @@ POST '/notifications/topic'
 
 #### POST '/smss'
 - Send SMS to a single contact number, it needs to be integrate with real SMS service provider.
-- It stores the sent message and stores the contact (as a client object) in the database and associate a relation between them using the client's object foreign key 
-- Sending SMS requests are limited per minute.
+- It stores the sent message and stores the contact (as a client object) in the database and associate a relation between them using the client's object foreign key.
+- Sending SMS requests are limited per minute and can be configured by "api_limit_per_minute" constant in "config.py", currently (api_limit_per_minute=5).
 - Request Arguments: 'contact', 'subject', 'message'
 - 'contact' have to be correctly formated "[+country_code].*[number]"
 - Returns: JSON Object contains 'success', 'message_id'
